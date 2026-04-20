@@ -1,0 +1,451 @@
+/* Container */
+
+.driver-container {
+  padding: 40px;
+  background: #f4f6f9;
+  min-height: 100vh;
+}
+
+/* Titles */
+
+.dashboard-title {
+  text-align: center;
+  margin-bottom: 40px;
+  font-weight: 700;
+}
+
+.section-title {
+  margin: 30px 0 20px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.completed-title {
+  margin-top: 50px;
+}
+
+/* Grid */
+
+.orders-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* Card */
+
+.order-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  transition: 0.3s ease;
+}
+
+.order-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+}
+
+.completed-card {
+  background: #f0fdf4;
+  border-left: 5px solid #22c55e;
+}
+
+/* Status */
+
+.status {
+  margin-left: 8px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+}
+
+.status.assigned {
+  background: #3b82f6;
+}
+
+.status.pickedup {
+  background: #f59e0b;
+}
+
+.status.intransit {
+  background: #8b5cf6;
+}
+
+.status-delivered {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 6px 12px;
+  background: #22c55e;
+  color: white;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Buttons */
+
+.btn {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: 0.2s ease;
+}
+
+.btn-blue {
+  background: #2563eb;
+  color: white;
+}
+
+.btn-yellow {
+  background: #f59e0b;
+  color: white;
+}
+
+.btn-orange {
+  background: #f97316;
+  color: white;
+}
+
+.btn:hover {
+  opacity: 0.9;
+}
+
+.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.empty-text {
+  color: gray;
+  text-align: center;
+}
+
+
+
+
+/* driver login */
+
+/* ===== Driver Login Page ===== */
+.driver-login-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+
+  /* soft gradient background */
+  background: radial-gradient(circle at 10% 10%, rgba(13, 110, 253, 0.20), transparent 40%),
+              radial-gradient(circle at 90% 20%, rgba(25, 135, 84, 0.18), transparent 45%),
+              linear-gradient(180deg, #0b1220 0%, #0a0f1b 100%);
+}
+
+.driver-login-card {
+  width: min(440px, 100%);
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 18px;
+  padding: 22px 22px 18px;
+  position: relative;
+
+  transform: translateY(10px);
+  opacity: 0;
+  animation: driverPop 420ms ease forwards;
+}
+
+@keyframes driverPop {
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.driver-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  opacity: 0.7;
+}
+.driver-close:hover {
+  opacity: 1;
+}
+
+.driver-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 13px;
+  background: rgba(13, 110, 253, 0.10);
+  color: #0d6efd;
+  border: 1px solid rgba(13, 110, 253, 0.22);
+}
+
+.driver-title {
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+.driver-subtitle {
+  font-size: 14px;
+}
+
+/* make bootstrap inputs feel nicer */
+.driver-login-card .form-control {
+  border-radius: 14px;
+}
+.driver-login-card .form-control:focus {
+  box-shadow: 0 0 0 0.20rem rgba(13, 110, 253, 0.18);
+}
+
+/* button polish */
+.driver-login-btn {
+  border-radius: 14px;
+  font-weight: 700;
+  padding: 12px 14px;
+}
+
+/* Mobile friendly spacing */
+@media (max-width: 420px) {
+  .driver-login-card {
+    padding: 18px 16px 14px;
+    border-radius: 16px;
+  }
+}
+
+
+
+
+/* banner  */
+
+.tracking-banner{
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(13, 110, 253, 0.10);
+  border: 1px solid rgba(13, 110, 253, 0.25);
+  font-weight: 600;
+}
+
+
+
+
+
+
+/* map */
+
+
+
+.driver-map-section {
+  margin: 16px 0 24px;
+}
+
+.driver-live-map {
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: white;
+}
+
+.driver-map-info {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.driver-map-info p {
+  margin: 8px 0;
+}
+
+.tracking-banner {
+  margin: 12px 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(13, 110, 253, 0.10);
+  border: 1px solid rgba(13, 110, 253, 0.25);
+  font-weight: 600;
+}
+
+
+
+
+/* check for map hide */
+.uber-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: white;
+  border: none;
+}
+
+.uber-banner-label {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.uber-banner-id {
+  margin: 4px 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.uber-banner-sub {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.uber-open-btn {
+  background: white;
+  color: #111827;
+  font-weight: 800;
+  padding: 12px 16px;
+  border-radius: 12px;
+}
+
+.uber-open-btn:hover {
+  transform: translateY(-1px);
+}
+
+.map-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+  padding: 20px;
+}
+
+.uber-map-modal {
+  width: min(1200px, 100%);
+  height: min(92vh, 860px);
+  background: #ffffff;
+  border-radius: 22px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+}
+
+.uber-map-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  background: #ffffff;
+}
+
+.uber-map-small {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+}
+
+.uber-map-title {
+  margin: 4px 0;
+  font-size: 22px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.uber-map-sub {
+  margin: 0;
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.close-map-btn {
+  border: none;
+  background: #ef4444;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.uber-map-wrapper {
+  flex: 1;
+  min-height: 0;
+  background: #e5e7eb;
+}
+
+.uber-map-wrapper .driver-live-map {
+  height: 100%;
+}
+
+.uber-map-wrapper .driver-live-map > div,
+.uber-map-wrapper .leaflet-container {
+  height: 100% !important;
+  width: 100% !important;
+}
+
+.uber-map-bottom {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px 18px;
+  background: #f8fafc;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.uber-info-chip {
+  background: white;
+  border-radius: 14px;
+  padding: 12px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.uber-info-chip span {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.uber-info-chip p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+  word-break: break-word;
+}
+
+@media (max-width: 900px) {
+  .uber-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .uber-map-bottom {
+    grid-template-columns: 1fr;
+  }
+
+  .uber-map-modal {
+    height: 94vh;
+  }
+}

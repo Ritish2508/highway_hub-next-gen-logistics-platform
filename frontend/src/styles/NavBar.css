@@ -1,0 +1,171 @@
+/* NAVBAR */
+
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 50px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  color: #ff9a45;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.logo {
+  font-weight: bold;
+  font-size: 22px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.logo:hover {
+  color: #0b3d91;
+}
+
+.nav-links {
+  display: flex;
+  list-style: none;
+  gap: 25px;
+  align-items: center;
+}
+
+.nav-links li {
+  cursor: pointer;
+  font-size: 17px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.25s ease;
+}
+
+.nav-links li:hover {
+  color: #0b3d91;
+  background: rgba(255, 154, 69, 0.15);
+  transform: translateY(-2px);
+}
+
+/* DEMO BUTTON (Premium Look) */
+
+.demo-btn {
+  background: linear-gradient(135deg, #ff9a45, #ff6a00);
+  color: white;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(255, 106, 0, 0.4);
+}
+
+.demo-btn:hover {
+  background: linear-gradient(135deg, #0b3d91, #1a5cff);
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 8px 20px rgba(11, 61, 145, 0.4);
+}
+
+.demo-btn:active {
+  transform: scale(0.96);
+}
+
+/* ===================== */
+/* DEMO MODAL (UPGRADED) */
+/* ===================== */
+
+.demo-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(10, 10, 20, 0.75);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease;
+}
+
+.demo-modal {
+  background: #111;
+  padding: 15px;
+  border-radius: 14px;
+  width: 90%;
+  max-width: 850px;
+  position: relative;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  animation: scaleUp 0.3s ease;
+}
+
+.demo-modal iframe,
+.demo-video {
+  width: 100%;
+  height: 420px;
+  border-radius: 12px;
+  border: none;
+}
+
+/* CLOSE BUTTON */
+
+.close-btn {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  color: #fff;
+  font-size: 30px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.close-btn:hover {
+  color: #ff9a45;
+  transform: rotate(90deg);
+}
+
+/* ANIMATIONS */
+
+@keyframes scaleUp {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ===================== */
+/* RESPONSIVE DESIGN 📱 */
+/* ===================== */
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 12px 20px;
+  }
+
+  .nav-links {
+    gap: 15px;
+  }
+
+  .nav-links li {
+    font-size: 15px;
+  }
+
+  .demo-modal iframe,
+  .demo-video {
+    height: 250px;
+  }
+}

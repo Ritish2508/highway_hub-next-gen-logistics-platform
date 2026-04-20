@@ -1,0 +1,35 @@
+.register-page {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* background: url("https://images.unsplash.com/photo-1508780709619-79562169bc64?auto=format&fit=crop&w=1470&q=80") no-repeat center center; */
+  background-size: cover;
+  position: relative;
+}
+
+/* Blueish transparent overlay */
+.register-page::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(212, 213, 215, 0.4); /* blue with transparency */
+  z-index: 1;
+}
+
+.register-card {
+  position: relative;
+  z-index: 2;
+  background-color: rgba(181, 179, 179, 0.85); /* slightly transparent white */
+  padding: 2rem;
+  border-radius: 15px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+.text-center{
+    color:#ff9a45;
+}
