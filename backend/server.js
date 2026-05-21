@@ -1,144 +1,105 @@
+const express = require("express");
+const http = require("http");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const cookieParser = require("cookie-parser");
+const { Server } = require("socket.io");
 
+const connectDB = require("./config/db");
 
-
-// import express from "express";
-// import dotenv from "dotenv";
-// import cors from "cors";
-// import connectDB from "./config/db.js";
-
-// import authRoutes from "./routes/authRoutes.js";
-// import adminRoutes from "./routes/adminRoutes.js";
-// import driverRoutes from "./routes/driverRoutes.js";
-// import vehicleRoutes from "./routes/vehicleRoutes.js";
-// // import ownerRoutes from "./routes/ownerRoutes.js"
-// import orderRoutes from "./routes/orderRoutes.js";
-// import ownerOrderRoutes from "./routes/ownerOrderRoutes.js";
-
-
-
-
-
-
-
-
-// dotenv.config();
-// connectDB();
-
-// const app = express();
-
-// app.use(cors());
-// app.use(express.json());
-
-// // app.use("/api/v1/auth", authRoutes);
-// // app.use("/api/v1/admin", adminRoutes);
-// // app.use("/api/v1/driver", driverRoutes);
-// // app.use("/api/v1/vehicle", vehicleRoutes);
-// // app.use("/api/v1/owner", ownerRoutes,ownerOrderRoutes);
-// // app.use("/api/v1/order", orderRoutes);
-
-// app.use("/api/v1/auth", authRoutes);
-// app.use("/api/v1/admin", adminRoutes);
-// app.use("/api/v1/driver", driverRoutes);
-// app.use("/api/v1/vehicle", vehicleRoutes);
-// app.use("/api/v1/owner", ownerOrderRoutes);          // owner routes
-// // app.use("/api/v1/owner/order", ownerOrderRoutes); // owner order routes
-// app.use("/api/v1/user", orderRoutes);
-
-
-
-// app.get("/", (req, res) => {
-//   res.send("Highway Hub Backend is running 🚀");
-// });
-
-// const PORT = process.env.PORT || 5000;
-// app.listen(PORT, () => {
-//   console.log(`Server running on port ${PORT}`);
-// });
-
-
-
-
-import express from "express";
-import dotenv from "dotenv";
-import cors from "cors";
-import http from "http";
-import { Server } from "socket.io";
-import connectDB from "./config/db.js";
-
-import authRoutes from "./routes/authRoutes.js";
-import adminRoutes from "./routes/adminRoutes.js";
-import driverRoutes from "./routes/driverRoutes.js";
-import vehicleRoutes from "./routes/vehicleRoutes.js";
-import orderRoutes from "./routes/orderRoutes.js";
-import ownerOrderRoutes from "./routes/ownerOrderRoutes.js";
+const adminRoutes = require("./routes/adminRoutes");
+const authRoutes = require("./routes/authRoutes");
+const driverRoutes = require("./routes/driverRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+const ownerRoutes = require("./routes/ownerRoutes");
+const ownerOrderRoutes = require("./routes/ownerOrderRoutes");
+const vehicleRoutes = require("./routes/vehicleRoutes");
 
 dotenv.config();
-connectDB();
 
 const app = express();
 const server = http.createServer(app);
 
-// ✅ Middlewares
-app.use(cors());
-app.use(express.json());
+const PORT = process.env.PORT || 5000;
+const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
 
-// ✅ Routes
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/admin", adminRoutes);
-app.use("/api/v1/driver", driverRoutes);
-app.use("/api/v1/vehicle", vehicleRoutes);
-app.use("/api/v1/owner", ownerOrderRoutes);
-app.use("/api/v1/user", orderRoutes);
-
-// ✅ Health
-app.get("/", (req, res) => {
-  res.send("Highway Hub Backend is running 🚀");
-});
-
-// 🔥 Socket setup
-export const io = new Server(server, {
+const io = new Server(server, {
   cors: {
-    origin: "*",
-    methods: ["GET", "POST", "PUT"],
-  },
+    origin: CLIENT_URL,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    credentials: true
+  }
 });
+
+app.use(
+  cors({
+    origin: CLIENT_URL,
+    credentials: true
+  })
+);
+
+app.use(express.json({ limit: "20mb" }));
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "HighwayHub backend is running"
+  });
+});
+
+app.get("/api/v1/health", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "API health is OK"
+  });
+});
+
+app.use("/api/v1/admin", adminRoutes);
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/driver", driverRoutes);
+app.use("/api/v1/orders", orderRoutes);
+app.use("/api/v1/owner", ownerRoutes);
+app.use("/api/v1/owner/orders", ownerOrderRoutes);
+app.use("/api/v1/vehicles", vehicleRoutes);
 
 io.on("connection", (socket) => {
-  console.log("⚡ Client connected:", socket.id);
-
-  // ✅ Join a room by orderId
-  socket.on("joinOrderRoom", (orderId) => {
-    if (!orderId) return;
-    socket.join(orderId);
-    // console.log("joined room:", orderId);
-  });
-
-  // ✅ Leave a room by orderId
-  socket.on("leaveOrderRoom", (orderId) => {
-    if (!orderId) return;
-    socket.leave(orderId);
-    // console.log("left room:", orderId);
-  });
-
-  // ✅ Driver live location updates
-  // payload: { orderId, lat, lng }
-  socket.on("driverLocationUpdate", ({ orderId, lat, lng }) => {
-    if (!orderId || lat == null || lng == null) return;
-
-    io.to(orderId).emit("driverLocation", {
-      orderId,
-      lat,
-      lng,
-      ts: Date.now(),
-    });
-  });
+  console.log(`Socket connected: ${socket.id}`);
 
   socket.on("disconnect", () => {
-    console.log("❌ Client disconnected:", socket.id);
+    console.log(`Socket disconnected: ${socket.id}`);
   });
 });
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found"
+  });
 });
+
+app.use((err, req, res, next) => {
+  console.error(err);
+
+  res.status(err.statusCode || 500).json({
+    success: false,
+    message: err.message || "Internal Server Error"
+  });
+});
+
+const startServer = async () => {
+  try {
+    await connectDB();
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Failed to start server:", error.message);
+    process.exit(1);
+  }
+};
+
+startServer();
+
+module.exports = { app, server, io };

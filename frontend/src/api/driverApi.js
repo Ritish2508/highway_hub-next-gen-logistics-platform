@@ -1,11 +1,10 @@
-import api from "./api";
+import axios from "axios";
 
-export const fetchOwnerDrivers = async () => {
-  try {
-    const { data } = await api.get("/owner/drivers");
-    return data.drivers; // ye array of driver objects
-  } catch (error) {
-    console.error("Error fetching drivers:", error);
-    return [];
-  }
-};
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
+
+const driverApi = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true
+});
+
+export default driverApi;

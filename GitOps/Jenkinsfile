@@ -1,0 +1,110 @@
+@Library('Shared') _
+pipeline {
+
+    agent { label 'Node' }
+
+    parameters {
+        string(name: 'FRONTEND_DOCKER_TAG', defaultValue: 'v1', description: 'Frontend Docker tag')
+        string(name: 'BACKEND_DOCKER_TAG', defaultValue: 'v1', description: 'Backend Docker tag')
+    }
+
+    stages {
+
+        stage("Workspace cleanup") {
+            steps {
+                cleanWs()
+            }
+        }
+
+        stage('Git: Code Checkout') {
+            steps {
+                script {
+                    code_checkout("https://github.com/Ritish2508/highway_hub-next-gen-logistics-plateform.git", "main")
+                }
+            }
+        }
+
+        stage('Verify Image Tags') {
+            steps {
+                echo "FRONTEND TAG: ${params.FRONTEND_DOCKER_TAG}"
+                echo "BACKEND TAG: ${params.BACKEND_DOCKER_TAG}"
+            }
+        }
+
+        stage("Update Kubernetes manifests") {
+            steps {
+
+                dir('kubernetes') {
+
+                    sh """
+                    sed -i -e s/highwayhub-backend-beta.*/highwayhub-backend-beta:${params.BACKEND_DOCKER_TAG}/g backend.yaml
+                    """
+
+                    sh """
+                    sed -i -e s/highwayhub-frontend-beta.*/highwayhub-frontend-beta:${params.FRONTEND_DOCKER_TAG}/g frontend.yaml
+                    """
+                }
+            }
+        }
+
+        stage("Push changes to GitHub") {
+            steps {
+
+                withCredentials([
+                    gitUsernamePassword(
+                        credentialsId: 'Github-cred',
+                        gitToolName: 'Default'
+                    )
+                ]) {
+
+                    sh '''
+                    git status
+
+                    git add .
+
+                    git commit -m "Updated image tags"
+
+                    git push https://github.com/Ritish2508/highway_hub-next-gen-logistics-plateform.git main
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+
+        always {
+
+            emailext(
+                attachLog: true,
+
+                subject: "HighwayHub Deployment - ${currentBuild.result}",
+
+                body: """
+                <html>
+                <body>
+
+                <h2>HighwayHub Deployment Status</h2>
+
+                <p>
+                Job Name: ${env.JOB_NAME}
+                </p>
+
+                <p>
+                Build Number: ${env.BUILD_NUMBER}
+                </p>
+
+                <p>
+                Build URL: ${env.BUILD_URL}
+                </p>
+
+                </body>
+                </html>
+                """,
+
+                to: "ritishchauhan48@gmail.com",
+                mimeType: 'text/html'
+            )
+        }
+    }
+}
