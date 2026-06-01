@@ -15,7 +15,7 @@ devops-agent/.venv/
 infra/terraform/.terraform/
 *.tfstate
 *.tfstate.*
-.terraform.lock.hcl
+
 
 # Python Cache
 __pycache__/
