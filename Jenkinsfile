@@ -1,9 +1,11 @@
-@Library('Shared') _
 pipeline {
-    agent { label 'Node' }
+    agent any
 
     environment {
-        SONAR_HOME = tool "Sonar"
+        SONAR_HOME = tool "SonarQube Scanner"
+        DOCKERHUB_USERNAME = "riti250"
+        FRONTEND_IMAGE = "highwayhub-frontend-beta"
+        BACKEND_IMAGE = "highwayhub-backend-beta"
     }
 
     parameters {
@@ -13,68 +15,50 @@ pipeline {
 
     stages {
 
-        stage("Workspace cleanup") {
+        stage("Workspace Cleanup") {
             steps {
                 cleanWs()
             }
         }
 
-        stage('Git: Code Checkout') {
+        stage("Git: Code Checkout") {
             steps {
-                script {
-                    code_checkout("https://github.com/Ritish2508/highway_hub-next-gen-logistics-plateform.git", "main")
-                }
+                git branch: 'main',
+                    credentialsId: 'github-token',
+                    url: 'https://github.com/Ritish2508/highway_hub-next-gen-logistics-platform'
             }
         }
 
-        stage("Trivy: Filesystem scan") {
+        stage("Trivy: Filesystem Scan") {
             steps {
-                script {
-                    trivy_scan()
-                }
+                sh "trivy fs --format table -o trivy-report.xml . || true"
             }
         }
 
-        stage("OWASP: Dependency check") {
+        stage("OWASP: Dependency Check") {
             steps {
-                script {
-                    owasp_dependency()
-                }
+                dependencyCheck additionalArguments: '--scan ./ --format XML --out .', odcInstallation: 'OWASP'
+                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
             }
         }
 
         stage("SonarQube: Code Analysis") {
             steps {
-                script {
-                    sonarqube_analysis("Sonar", "highwayhub", "highwayhub")
+                withSonarQubeEnv('SonarQube') {
+                    sh """
+                        $SONAR_HOME/bin/sonar-scanner \
+                        -Dsonar.projectKey=highwayhub \
+                        -Dsonar.projectName=highwayhub \
+                        -Dsonar.sources=.
+                    """
                 }
             }
         }
 
-        stage("SonarQube: Quality Gates") {
+        stage("SonarQube: Quality Gate") {
             steps {
-                script {
-                    sonarqube_code_quality()
-                }
-            }
-        }
-
-        stage('Environment Setup') {
-            parallel {
-                stage("Backend env setup") {
-                    steps {
-                        dir("Automations") {
-                            sh "bash updatebackendnew.sh"
-                        }
-                    }
-                }
-
-                stage("Frontend env setup") {
-                    steps {
-                        dir("Automations") {
-                            sh "bash updatefrontendnew.sh"
-                        }
-                    }
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: false
                 }
             }
         }
@@ -82,20 +66,20 @@ pipeline {
         stage("Docker: Build Images") {
             steps {
                 script {
-                    dir('backend') {
-                        docker_build(
-                            "highwayhub-backend-beta",
-                            "${params.BACKEND_DOCKER_TAG}",
-                            "riti250"
-                        )
-                    }
+                    withCredentials([usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )]) {
+                        sh "docker login -u $DOCKER_USER -p $DOCKER_PASS"
 
-                    dir('frontend') {
-                        docker_build(
-                            "highwayhub-frontend-beta",
-                            "${params.FRONTEND_DOCKER_TAG}",
-                            "riti250"
-                        )
+                        dir('backend') {
+                            sh "docker build -t ${DOCKERHUB_USERNAME}/${BACKEND_IMAGE}:${params.BACKEND_DOCKER_TAG} ."
+                        }
+
+                        dir('frontend') {
+                            sh "docker build -t ${DOCKERHUB_USERNAME}/${FRONTEND_IMAGE}:${params.FRONTEND_DOCKER_TAG} ."
+                        }
                     }
                 }
             }
@@ -104,37 +88,22 @@ pipeline {
         stage("Docker: Push Images") {
             steps {
                 script {
-                    docker_push(
-                        "highwayhub-backend-beta",
-                        "${params.BACKEND_DOCKER_TAG}",
-                        "riti250"
-                    )
-
-                    docker_push(
-                        "highwayhub-frontend-beta",
-                        "${params.FRONTEND_DOCKER_TAG}",
-                        "riti250"
-                    )
+                    sh "docker push ${DOCKERHUB_USERNAME}/${BACKEND_IMAGE}:${params.BACKEND_DOCKER_TAG}"
+                    sh "docker push ${DOCKERHUB_USERNAME}/${FRONTEND_IMAGE}:${params.FRONTEND_DOCKER_TAG}"
                 }
             }
         }
     }
 
     post {
+        always {
+            archiveArtifacts artifacts: '*.xml', allowEmptyArchive: true
+        }
         success {
-            archiveArtifacts artifacts: '*.xml', followSymlinks: false
-
-            build job: "HighwayHub-CD",
-            parameters: [
-                string(
-                    name: 'FRONTEND_DOCKER_TAG',
-                    value: "${params.FRONTEND_DOCKER_TAG}"
-                ),
-                string(
-                    name: 'BACKEND_DOCKER_TAG',
-                    value: "${params.BACKEND_DOCKER_TAG}"
-                )
-            ]
+            echo "Build successful!"
+        }
+        failure {
+            echo "Build failed!"
         }
     }
 }
