@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sonarqube
+  namespace: highwayhub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sonarqube
+  template:
+    metadata:
+      labels:
+        app: sonarqube
+    spec:
+      initContainers:
+        - name: init-sysctl
+          image: busybox
+          command: ["sysctl", "-w", "vm.max_map_count=262144"]
+          securityContext:
+            privileged: true
+      containers:
+        - name: sonarqube
+          image: sonarqube:lts-community
+          ports:
+            - containerPort: 9000
+          env:
+            - name: SONAR_ES_BOOTSTRAP_CHECKS_DISABLE
+              value: "true"
+            - name: SONAR_WEB_JAVAADDITIONALOPTS
+              value: "-Xmx512m -Xms128m"
+            - name: SONAR_CE_JAVAADDITIONALOPTS
+              value: "-Xmx512m -Xms128m"
+            - name: SONAR_SEARCH_JAVAADDITIONALOPTS
+              value: "-Xmx256m -Xms256m"
+          volumeMounts:
+            - name: sonarqube-storage
+              mountPath: /opt/sonarqube/data
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "200m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+      volumes:
+        - name: sonarqube-storage
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sonarqube-service
+  namespace: highwayhub
+spec:
+  selector:
+    app: sonarqube
+  type: NodePort
+  ports:
+    - port: 9000
+      targetPort: 9000
+      nodePort: 32100

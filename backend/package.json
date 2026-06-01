@@ -1,20 +1,12 @@
 {
   "name": "highwayhub-backend",
   "version": "1.0.0",
-  "description": "HighwayHub backend service",
+  "type": "module",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "keywords": [
-    "express",
-    "mongodb",
-    "backend",
-    "highwayhub"
-  ],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",

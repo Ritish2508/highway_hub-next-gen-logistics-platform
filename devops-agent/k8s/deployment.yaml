@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-agent
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devops-agent
+  template:
+    metadata:
+      labels:
+        app: devops-agent
+    spec:
+      serviceAccountName: devops-agent-sa
+      containers:
+        - name: devops-agent
+          image: your-ecr-repo/devops-agent:latest
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: devops-agent-secrets
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "512Mi"
+              cpu: "500m"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: devops-agent-sa
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: devops-agent-role
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "namespaces", "events"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: devops-agent-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: devops-agent-role
+subjects:
+  - kind: ServiceAccount
+    name: devops-agent-sa
+    namespace: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-agent
+spec:
+  selector:
+    app: devops-agent
+  ports:
+    - port: 8000
+      targetPort: 8000

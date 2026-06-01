@@ -17,14 +17,10 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: riti250/highwayhub-frontend-beta:v1
+          image: riti250/highwayhub-frontend-beta:v7
+          imagePullPolicy: Always
           ports:
             - containerPort: 5173
-          env:
-            - name: VITE_API_BASE_URL
-              value: "http://<WORKER_PUBLIC_IP>:31100/api/v1"
-            - name: VITE_SOCKET_URL
-              value: "http://<WORKER_PUBLIC_IP>:31100"
 ---
 apiVersion: v1
 kind: Service

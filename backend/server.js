@@ -1,19 +1,20 @@
-const express = require("express");
-const http = require("http");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const cookieParser = require("cookie-parser");
-const { Server } = require("socket.io");
+import express from "express";
+import http from "http";
+import cors from "cors";
+import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
+import { Server } from "socket.io";
 
-const connectDB = require("./config/db");
+import connectDB from "./config/db.js";
+import { setIo } from "./utils/socket.js";
 
-const adminRoutes = require("./routes/adminRoutes");
-const authRoutes = require("./routes/authRoutes");
-const driverRoutes = require("./routes/driverRoutes");
-const orderRoutes = require("./routes/orderRoutes");
-const ownerRoutes = require("./routes/ownerRoutes");
-const ownerOrderRoutes = require("./routes/ownerOrderRoutes");
-const vehicleRoutes = require("./routes/vehicleRoutes");
+import adminRoutes from "./routes/adminRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+import driverRoutes from "./routes/driverRoutes.js";
+import orderRoutes from "./routes/orderRoutes.js";
+import ownerRoutes from "./routes/ownerRoutes.js";
+import ownerOrderRoutes from "./routes/ownerOrderRoutes.js";
+import vehicleRoutes from "./routes/vehicleRoutes.js";
 
 dotenv.config();
 
@@ -21,20 +22,26 @@ const app = express();
 const server = http.createServer(app);
 
 const PORT = process.env.PORT || 5000;
-const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
+
+const allowedOrigins = [
+  "http://localhost:31000",
+  "http://localhost:5173",
+];
 
 const io = new Server(server, {
   cors: {
-    origin: CLIENT_URL,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    credentials: true
-  }
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    credentials: true,
+  },
 });
+
+setIo(io);
 
 app.use(
   cors({
-    origin: CLIENT_URL,
-    credentials: true
+    origin: allowedOrigins,
+    credentials: true,
   })
 );
 
@@ -45,14 +52,14 @@ app.use(cookieParser());
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "HighwayHub backend is running"
+    message: "HighwayHub backend is running",
   });
 });
 
 app.get("/api/v1/health", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "API health is OK"
+    message: "API health is OK",
   });
 });
 
@@ -75,7 +82,7 @@ io.on("connection", (socket) => {
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: "Route not found"
+    message: "Route not found",
   });
 });
 
@@ -84,7 +91,7 @@ app.use((err, req, res, next) => {
 
   res.status(err.statusCode || 500).json({
     success: false,
-    message: err.message || "Internal Server Error"
+    message: err.message || "Internal Server Error",
   });
 });
 
@@ -102,4 +109,4 @@ const startServer = async () => {
 
 startServer();
 
-module.exports = { app, server, io };
+export { app, server, io };

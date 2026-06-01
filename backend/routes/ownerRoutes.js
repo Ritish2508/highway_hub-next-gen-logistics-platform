@@ -1,14 +1,13 @@
-// import express from "express";
-// import { requireSignIn, isOwner } from "../middlewares/authMiddlewares.js";
-// import { assignDriverToOwner } from "../controllers/ownerController.js";
+import express from "express";
 
-// const router = express.Router();
+const router = express.Router();
 
-// router.put(
-//   "/assign-driver/:driverId",
-//   requireSignIn,
-//   isOwner,
-//   assignDriverToOwner
-// );
+// temporary basic test route
+router.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Owner routes working",
+  });
+});
 
-// export default router;
+export default router;

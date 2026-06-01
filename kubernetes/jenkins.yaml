@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins
+  namespace: highwayhub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jenkins
+  template:
+    metadata:
+      labels:
+        app: jenkins
+    spec:
+      securityContext:
+        fsGroup: 1000
+        runAsUser: 0
+      containers:
+        - name: jenkins
+          image: jenkins/jenkins:lts
+          ports:
+            - containerPort: 8080
+            - containerPort: 50000
+          volumeMounts:
+            - name: jenkins-storage
+              mountPath: /var/jenkins_home
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "500m"
+      volumes:
+        - name: jenkins-storage
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-service
+  namespace: highwayhub
+spec:
+  selector:
+    app: jenkins
+  type: NodePort
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      nodePort: 32000
+    - name: agent
+      port: 50000
+      targetPort: 50000

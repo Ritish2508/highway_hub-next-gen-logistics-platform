@@ -1,0 +1,170 @@
+---
+# DevOps Agent - Private, no public access
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: devops-agent-config
+  namespace: highwayhub
+data:
+  environment: "production"
+  readonly_mode: "true"
+  log_level: "INFO"
+  kubernetes_namespace: "highwayhub"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: devops-agent-secrets
+  namespace: highwayhub
+type: Opaque
+stringData:
+  jenkins-token: "your-jenkins-api-token"
+  sonarqube-token: "your-sonarqube-token"
+  github-token: "your-github-token"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-agent
+  namespace: highwayhub
+  labels:
+    app: devops-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devops-agent
+  template:
+    metadata:
+      labels:
+        app: devops-agent
+    spec:
+      serviceAccountName: devops-agent
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: devops-agent
+        image: your-dockerhub-username/highwayhub-devops-agent:v1
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: ENVIRONMENT
+          valueFrom:
+            configMapKeyRef:
+              name: devops-agent-config
+              key: environment
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: devops-agent-config
+              key: log_level
+        - name: KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: JENKINS_URL
+          value: "http://jenkins:8080"
+        - name: SONARQUBE_URL
+          value: "http://sonarqube:9000"
+        - name: PROMETHEUS_URL
+          value: "http://prometheus:9090"
+        - name: GRAFANA_URL
+          value: "http://grafana:3000"
+        - name: BACKEND_URL
+          value: "http://backend:5000/api/v1"
+        - name: READONLY_MODE
+          value: "true"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 5
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+
+---
+# Internal Service (ClusterIP - NO PUBLIC ACCESS)
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-agent
+  namespace: highwayhub
+  labels:
+    app: devops-agent
+spec:
+  type: ClusterIP  # ✅ Private - NO load balancer
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: devops-agent
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: devops-agent
+  namespace: highwayhub
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: devops-agent
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/log", "services", "configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets", "daemonsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs", "cronjobs"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: devops-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: devops-agent
+subjects:
+- kind: ServiceAccount
+  name: devops-agent
+  namespace: highwayhub
