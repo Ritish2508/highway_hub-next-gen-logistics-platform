@@ -1,111 +1,176 @@
 pipeline {
     agent any
-
+    
     environment {
-        SONAR_HOME = tool "SonarQube Scanner"
-        DOCKERHUB_USERNAME = "riti250"
-        FRONTEND_IMAGE = "highwayhub-frontend-beta"
-        BACKEND_IMAGE = "highwayhub-backend-beta"
+        DOCKER_HUB_USERNAME = 'riti250'
+        DOCKER_HUB_REPO = 'riti250/highwayhub'
+        GIT_REPO = 'https://github.com/Ritish2508/highway_hub-next-gen-logistics-platform.git'
+        SONARQUBE_PROJECT_KEY = 'highwayhub'
     }
-
+    
     parameters {
-        string(name: 'FRONTEND_DOCKER_TAG', defaultValue: 'v1', description: 'Frontend Docker tag')
-        string(name: 'BACKEND_DOCKER_TAG', defaultValue: 'v1', description: 'Backend Docker tag')
+        choice(name: 'BUILD_TYPE', choices: ['frontend', 'backend', 'both'], description: 'What to build?')
     }
-
+    
     stages {
-
-        stage("Workspace Cleanup") {
-            steps {
-                cleanWs()
-            }
-        }
-
-        stage("Git: Code Checkout") {
-            steps {
-                git branch: 'main',
-                    credentialsId: 'github-token',
-                    url: 'https://github.com/Ritish2508/highway_hub-next-gen-logistics-platform'
-            }
-        }
-
-        stage("Trivy: Filesystem Scan") {
-            steps {
-                sh "trivy fs --format table -o trivy-report.xml . || true"
-            }
-        }
-
-        stage("OWASP: Dependency Check") {
-            steps {
-                dependencyCheck additionalArguments: '--scan ./ --format XML --out .', odcInstallation: 'OWASP'
-                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-            }
-        }
-
-        stage("SonarQube: Code Analysis") {
-            steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh """
-                        $SONAR_HOME/bin/sonar-scanner \
-                        -Dsonar.projectKey=highwayhub \
-                        -Dsonar.projectName=highwayhub \
-                        -Dsonar.sources=.
-                    """
-                }
-            }
-        }
-
-        stage("SonarQube: Quality Gate") {
-            steps {
-                timeout(time: 2, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: false
-                }
-            }
-        }
-
-        stage("Docker: Build Images") {
+        stage('Checkout') {
             steps {
                 script {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'dockerhub-credentials',
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )]) {
-                        sh "docker login -u $DOCKER_USER -p $DOCKER_PASS"
-
-                        dir('backend') {
-                            sh "docker build -t ${DOCKERHUB_USERNAME}/${BACKEND_IMAGE}:${params.BACKEND_DOCKER_TAG} ."
-                        }
-
-                        dir('frontend') {
-                            sh "docker build -t ${DOCKERHUB_USERNAME}/${FRONTEND_IMAGE}:${params.FRONTEND_DOCKER_TAG} ."
-                        }
+                    echo "📦 Checking out code..."
+                    checkout scm
+                }
+            }
+        }
+        
+        stage('Trivy Filesystem Scan') {
+            steps {
+                script {
+                    echo "🔍 Running Trivy filesystem scan..."
+                    sh '''
+                        trivy fs --severity HIGH,CRITICAL \
+                            --format table \
+                            --output trivy-report.html \
+                            .
+                        echo "✅ Trivy scan complete"
+                    '''
+                }
+            }
+        }
+        
+        stage('OWASP Dependency Check') {
+            steps {
+                script {
+                    echo "🔒 Running OWASP Dependency Check..."
+                    sh '''
+                        dependency-check \
+                            --project "HighwayHub" \
+                            --scan . \
+                            --format HTML \
+                            --out owasp-report.html \
+                            || true
+                        echo "✅ OWASP scan complete"
+                    '''
+                }
+            }
+        }
+        
+        stage('SonarQube Analysis') {
+            steps {
+                script {
+                    echo "📊 Running SonarQube analysis..."
+                    withSonarQubeEnv('SonarQube') {
+                        sh '''
+                            sonar-scanner \
+                                -Dsonar.projectKey=${SONARQUBE_PROJECT_KEY} \
+                                -Dsonar.sources=. \
+                                -Dsonar.host.url=http://sonarqube-service:9000 \
+                                -Dsonar.login=${SONARQUBE_TOKEN}
+                        '''
                     }
                 }
             }
         }
-
-        stage("Docker: Push Images") {
+        
+        stage('SonarQube Quality Gate') {
             steps {
                 script {
-                    sh "docker push ${DOCKERHUB_USERNAME}/${BACKEND_IMAGE}:${params.BACKEND_DOCKER_TAG}"
-                    sh "docker push ${DOCKERHUB_USERNAME}/${FRONTEND_IMAGE}:${params.FRONTEND_DOCKER_TAG}"
+                    echo "✅ Waiting for Quality Gate..."
+                    timeout(time: 5, unit: 'MINUTES') {
+                        waitForQualityGate abortPipeline: true
+                    }
+                }
+            }
+        }
+        
+        stage('Build Frontend') {
+            when {
+                expression { params.BUILD_TYPE == 'frontend' || params.BUILD_TYPE == 'both' }
+            }
+            steps {
+                script {
+                    echo "🏗️ Building Frontend Docker image..."
+                    sh '''
+                        cd frontend
+                        docker build -t ${DOCKER_HUB_REPO}-frontend:${BUILD_NUMBER} .
+                        docker tag ${DOCKER_HUB_REPO}-frontend:${BUILD_NUMBER} ${DOCKER_HUB_REPO}-frontend:latest
+                        echo "✅ Frontend build complete"
+                    '''
+                }
+            }
+        }
+        
+        stage('Build Backend') {
+            when {
+                expression { params.BUILD_TYPE == 'backend' || params.BUILD_TYPE == 'both' }
+            }
+            steps {
+                script {
+                    echo "🏗️ Building Backend Docker image..."
+                    sh '''
+                        cd backend
+                        docker build -t ${DOCKER_HUB_REPO}-backend:${BUILD_NUMBER} .
+                        docker tag ${DOCKER_HUB_REPO}-backend:${BUILD_NUMBER} ${DOCKER_HUB_REPO}-backend:latest
+                        echo "✅ Backend build complete"
+                    '''
+                }
+            }
+        }
+        
+        stage('Push to Docker Hub') {
+            steps {
+                script {
+                    echo "📤 Pushing to Docker Hub..."
+                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                        sh '''
+                            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                            
+                            if [ "${BUILD_TYPE}" = "frontend" ] || [ "${BUILD_TYPE}" = "both" ]; then
+                                docker push ${DOCKER_HUB_REPO}-frontend:${BUILD_NUMBER}
+                                docker push ${DOCKER_HUB_REPO}-frontend:latest
+                                echo "✅ Frontend pushed"
+                            fi
+                            
+                            if [ "${BUILD_TYPE}" = "backend" ] || [ "${BUILD_TYPE}" = "both" ]; then
+                                docker push ${DOCKER_HUB_REPO}-backend:${BUILD_NUMBER}
+                                docker push ${DOCKER_HUB_REPO}-backend:latest
+                                echo "✅ Backend pushed"
+                            fi
+                            
+                            docker logout
+                        '''
+                    }
+                }
+            }
+        }
+        
+        stage('Trigger CD Pipeline') {
+            steps {
+                script {
+                    echo "🔄 Triggering CD pipeline..."
+                    build job: 'highwayhub-cd', 
+                         parameters: [
+                             string(name: 'BUILD_NUMBER', value: env.BUILD_NUMBER.toString()),
+                             choice(name: 'BUILD_TYPE', value: params.BUILD_TYPE)
+                         ],
+                         wait: false
                 }
             }
         }
     }
-
+    
     post {
         always {
-            node('built-in') {
-                archiveArtifacts artifacts: '*.xml', allowEmptyArchive: true
+            script {
+                echo "📝 Archiving reports..."
+                archiveArtifacts artifacts: '*-report.html', 
+                                 allowEmptyArchive: true
             }
         }
         success {
-            echo "Build successful!"
+            echo "✅ Pipeline completed successfully!"
         }
         failure {
-            echo "Build failed!"
+            echo "❌ Pipeline failed. Check logs above."
         }
     }
 }
