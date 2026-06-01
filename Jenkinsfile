@@ -97,7 +97,9 @@ pipeline {
 
     post {
         always {
-            archiveArtifacts artifacts: '*.xml', allowEmptyArchive: true
+            node('built-in') {
+                archiveArtifacts artifacts: '*.xml', allowEmptyArchive: true
+            }
         }
         success {
             echo "Build successful!"
