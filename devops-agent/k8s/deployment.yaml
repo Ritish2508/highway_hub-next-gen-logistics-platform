@@ -16,7 +16,7 @@ spec:
       serviceAccountName: devops-agent-sa
       containers:
         - name: devops-agent
-          image: your-ecr-repo/devops-agent:latest
+          image: riti250/highwayhub-devops-agent:v1
           ports:
             - containerPort: 8000
           envFrom:
