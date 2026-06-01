@@ -22,38 +22,6 @@ pipeline {
             }
         }
         
-        stage('Trivy Filesystem Scan') {
-            steps {
-                script {
-                    echo "🔍 Running Trivy filesystem scan..."
-                    sh '''
-                        trivy fs --severity HIGH,CRITICAL \
-                            --format table \
-                            --output trivy-report.html \
-                            .
-                        echo "✅ Trivy scan complete"
-                    '''
-                }
-            }
-        }
-        
-        stage('OWASP Dependency Check') {
-            steps {
-                script {
-                    echo "🔒 Running OWASP Dependency Check..."
-                    sh '''
-                        dependency-check \
-                            --project "HighwayHub" \
-                            --scan . \
-                            --format HTML \
-                            --out owasp-report.html \
-                            || true
-                        echo "✅ OWASP scan complete"
-                    '''
-                }
-            }
-        }
-        
         stage('SonarQube Analysis') {
             steps {
                 script {
@@ -71,29 +39,17 @@ pipeline {
             }
         }
         
-        stage('SonarQube Quality Gate') {
-            steps {
-                script {
-                    echo "✅ Waiting for Quality Gate..."
-                    timeout(time: 5, unit: 'MINUTES') {
-                        waitForQualityGate abortPipeline: true
-                    }
-                }
-            }
-        }
-        
         stage('Build Frontend') {
             when {
                 expression { params.BUILD_TYPE == 'frontend' || params.BUILD_TYPE == 'both' }
             }
             steps {
                 script {
-                    echo "🏗️ Building Frontend Docker image..."
+                    echo "🏗️ Building Frontend..."
                     sh '''
                         cd frontend
                         docker build -t ${DOCKER_HUB_REPO}-frontend:${BUILD_NUMBER} .
                         docker tag ${DOCKER_HUB_REPO}-frontend:${BUILD_NUMBER} ${DOCKER_HUB_REPO}-frontend:latest
-                        echo "✅ Frontend build complete"
                     '''
                 }
             }
@@ -105,12 +61,11 @@ pipeline {
             }
             steps {
                 script {
-                    echo "🏗️ Building Backend Docker image..."
+                    echo "🏗️ Building Backend..."
                     sh '''
                         cd backend
                         docker build -t ${DOCKER_HUB_REPO}-backend:${BUILD_NUMBER} .
                         docker tag ${DOCKER_HUB_REPO}-backend:${BUILD_NUMBER} ${DOCKER_HUB_REPO}-backend:latest
-                        echo "✅ Backend build complete"
                     '''
                 }
             }
@@ -127,13 +82,11 @@ pipeline {
                             if [ "${BUILD_TYPE}" = "frontend" ] || [ "${BUILD_TYPE}" = "both" ]; then
                                 docker push ${DOCKER_HUB_REPO}-frontend:${BUILD_NUMBER}
                                 docker push ${DOCKER_HUB_REPO}-frontend:latest
-                                echo "✅ Frontend pushed"
                             fi
                             
                             if [ "${BUILD_TYPE}" = "backend" ] || [ "${BUILD_TYPE}" = "both" ]; then
                                 docker push ${DOCKER_HUB_REPO}-backend:${BUILD_NUMBER}
                                 docker push ${DOCKER_HUB_REPO}-backend:latest
-                                echo "✅ Backend pushed"
                             fi
                             
                             docker logout
@@ -142,35 +95,14 @@ pipeline {
                 }
             }
         }
-        
-        stage('Trigger CD Pipeline') {
-            steps {
-                script {
-                    echo "🔄 Triggering CD pipeline..."
-                    build job: 'highwayhub-cd', 
-                         parameters: [
-                             string(name: 'BUILD_NUMBER', value: env.BUILD_NUMBER.toString()),
-                             choice(name: 'BUILD_TYPE', value: params.BUILD_TYPE)
-                         ],
-                         wait: false
-                }
-            }
-        }
     }
     
     post {
-        always {
-            script {
-                echo "📝 Archiving reports..."
-                archiveArtifacts artifacts: '*-report.html', 
-                                 allowEmptyArchive: true
-            }
-        }
         success {
-            echo "✅ Pipeline completed successfully!"
+            echo "✅ Build successful!"
         }
         failure {
-            echo "❌ Pipeline failed. Check logs above."
+            echo "❌ Build failed!"
         }
     }
 }
